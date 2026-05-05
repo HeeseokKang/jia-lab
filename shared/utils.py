@@ -30,6 +30,21 @@ def _extract_index(filename: str) -> str | None:
     return normalized if normalized else None
 
 
+def _extract_variant_suffix(filename: str) -> str:
+    stem = Path(filename).stem
+    if "FUCCI_" not in stem.upper():
+        return ""
+
+    parts = re.split(r"_FUCCI_", stem, flags=re.IGNORECASE, maxsplit=1)
+    if len(parts) != 2:
+        return ""
+
+    tail = parts[1]
+    # Remove channel token to keep only post-channel variant information.
+    tail = re.sub(r"^(BF|561|647)", "", tail, flags=re.IGNORECASE)
+    return tail.strip("_").lower()
+
+
 def _is_image(path: Path) -> bool:
     return path.suffix.lower() in IMAGE_EXTENSIONS
 
@@ -72,12 +87,22 @@ def get_clean_file_list(data_root: Path | str, min_file_size_bytes: int = 1024) 
         if index is None:
             continue
 
-        grouped[channel][index].append(path)
+        parent_key = str(path.parent.relative_to(root))
+        group_key = f"{parent_key}|{index}"
+        grouped[channel][group_key].append(path)
+
+    # Keep only keys shared across all channels to enforce strict frame-level alignment.
+    common_keys = set(grouped[CHANNEL_TOKENS[0]].keys())
+    for channel in CHANNEL_TOKENS[1:]:
+        common_keys &= set(grouped[channel].keys())
 
     clean: dict[str, list[Path]] = {channel: [] for channel in CHANNEL_TOKENS}
-    for channel in CHANNEL_TOKENS:
-        for index in sorted(grouped[channel]):
-            selected = _choose_representative(grouped[channel][index], min_file_size_bytes)
+    for group_key in sorted(common_keys):
+        for channel in CHANNEL_TOKENS:
+            paths = grouped[channel][group_key]
+            non_filtered = [p for p in paths if "filtered" not in _extract_variant_suffix(p.name)]
+            selected_pool = non_filtered if non_filtered else paths
+            selected = _choose_representative(selected_pool, min_file_size_bytes)
             clean[channel].append(selected)
 
     return clean
