@@ -1,26 +1,27 @@
 # Jia Lab Image Analysis Pipelines
-Lead: Heeseok Kang / Advisor: Bill Jia
+
+Lead: Heeseok Kang  
+Advisor: Bill Jia
+
+## Overview
+
+This repository contains reproducible image-analysis workflows for cell-cycle and voltage-imaging experiments in Jia Lab. The current implementation focuses on FUCCI timelapse data quality control, channel alignment, and preprocessing utilities that support downstream segmentation and tracking analyses.
 
 ## Project Structure
 
-fucci-analysis/: FUCCI cell cycle reporter 분석 (Segmentation & Tracking)
-
-voltage-imaging/: Ratiometric voltage imaging 데이터 분석
-
-shared/: 공용 유틸리티 및 헬퍼 함수
+- `configs/`: Global project configuration, including canonical data paths and shared runtime parameters.
+- `shared/`: Reusable helper modules used across analysis pipelines.
+- `fucci-analysis/`: Primary analysis workspace for FUCCI timelapse data validation and quality control.
+- `voltage-imaging/`: Placeholder for upcoming ratiometric voltage-imaging analysis workflows.
 
 ## Data Paths
 
-Scratch: /data/Project_Data/Voltage_CellCycle/
+- Scratch storage: `/data/Project_Data/Voltage_CellCycle/`
+- NAS storage: `/mnt/nas1/Projects/Voltage_CellCycle/Data/`
 
-NAS: /mnt/nas1/Projects/Voltage_CellCycle/Data/
+## Current Priorities (FUCCI)
 
-## Bill's Agenda (FUCCI)
-
-Internal consistency metrics (division/edge check)
-
-647 channel background subtraction (media blank)
-
-Dark frame imputation from BF segments
-
-Multi-well scalability
+- Internal consistency metrics (e.g., division and edge-case checks)
+- 647-channel background subtraction using media blank references
+- Dark-frame imputation informed by brightfield segments
+- Multi-well scalability for higher-throughput experiments
