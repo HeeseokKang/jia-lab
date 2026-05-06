@@ -1,8 +1,8 @@
 # 20260413_validation
 
-## Background characterization results (A1.4)
+## Background characterization results
 
-This directory stores outputs for step **A1.4** (background characterization) on Dataset 1 validation artifacts.
+This directory stores outputs for background characterization on Dataset 1 validation artifacts.
 
 ### Folder contents
 
@@ -25,7 +25,7 @@ Gradient visualization + metrics:
 
 ### Key findings (today’s run)
 
-- **Quantitative gradient metrics (A1.4)**
+- **Quantitative gradient metrics**
   - `561`
     - `row_gradient_range`: `5.591`
     - `col_gradient_range`: `44.953`
