@@ -1,33 +1,34 @@
 # fucci-analysis
 
-## Purpose
+FUCCI cell cycle timelapse analysis subproject (Bill Jia Lab, UCSF).
 
-This is the primary project workspace for FUCCI timelapse data quality validation and preprocessing checks prior to segmentation and tracking.
+Primary dataset: `20260413_FUCCI_Timelapse` — 32 wells × 67 timepoints × 3 channels (`BF`, `561`, `647`), 1500 × 1500 uint16. Currently scoped to single-well validation on `R1_1` before scaling.
 
-## Key Files
+## Layout
 
-- `src/check_data.py`: Compares raw versus cleaned image counts by channel and verifies alignment targets for BF/561/647 data.
-- `src/diagnose_mismatch.py`: Diagnoses channel-index mismatches by reporting channel-specific unique indexes and duplicated index groups.
-- `src/visual_qc.py`: Generates visual quality-control figures from selected aligned frames to inspect image quality and channel consistency.
-- `src/quantify_background.py`: Background characterization (A1.4) for a single channel; computes quadrant means per timepoint/well and applies per-timepoint median subtraction.
-- `src/plot_background_gradient.py`: Builds row/col background gradient heatmaps from the A1.4 CSV outputs and summarizes gradient strength.
+- `src/` — analysis scripts. See `src/README.md` for the pipeline order and per-script description.
+- `analysis/20260413_validation/` — outputs (CSVs, QC PNGs, masks). See its `README.md` for inventory and findings.
+- `environment.yml` — conda env (`fucci-analysis`).
 
-## A1.4 Background characterization (completed)
+## Two phases
 
-Purpose: quantify spatial non-uniformity and estimate how much structured background remains after robust (median-based) subtraction, prior to downstream segmentation/tracking.
+1. **Background characterization** (precursor) — quadrant-level QC of 561/647 and pseudo flat-field correction (`quantify_background.py`, `plot_background_gradient.py`, `flat_field_correction.py`).
+2. **Cell cycle pipeline** (current main path) — Cellpose-SAM segmentation → trackpy linking → per-track nuclear FUCCI intensity from a 3 px-eroded BF mask. Five scripts run in this order:
+   - `segment_test.py` (one-frame smoke test)
+   - `timeseries_one_well.py` (per-frame masks, deprecated population summary)
+   - `tracking_one_well.py` (frame-to-frame linking)
+   - `nuclear_intensity_one_well.py` (per-track 561/647 in nuclear region)
+   - `nuclear_intensity_raw_comparison.py` (corrected vs raw 647 diagnostic)
 
-Outputs (Dataset 1 / `20260413_validation`):
+## Headline result
 
-- Background tables:
-  - `analysis/20260413_validation/background/quadrant_background_647.csv`
-  - `analysis/20260413_validation/background/quadrant_background_561.csv`
-  - `analysis/20260413_validation/background/timepoint_background_summary_647.csv`
-  - `analysis/20260413_validation/background/timepoint_background_summary_561.csv`
-- Gradient visualization:
-  - `analysis/20260413_validation/plots/background_gradient_heatmap_561_647.png`
-- Gradient metrics:
-  - `analysis/20260413_validation/background/background_gradient_metrics_561_647.csv`
+The t0-reference flat-field correction was found to flatten 647 cell-to-cell variation (`std_raw / std_corrected ≈ 52.6×` on full-duration tracks). The cell cycle pipeline therefore uses **raw 647**; the row-axis 647 gradient is left in but biological FUCCI signal is preserved. See `analysis/20260413_validation/README.md` for the supporting figures and per-track stats.
 
-Key finding (high-level): `647` shows more pronounced structured gradient along the `row` axis, while `561` exhibits stronger overall non-uniformity and larger variation along the `col` axis.
+## How to run
 
-Next step: move from quadrant-level summaries to a (pseudo-)flat-field correction map (robust per-timepoint/per-channel background model), then re-run QC on background-corrected frames.
+```bash
+conda activate fucci-analysis
+python fucci-analysis/src/<script>.py
+```
+
+Cellpose-SAM scripts auto-use the Dodo GPU. Large derived data (`corrected/` ~18 GB, `segmentation_test/masks/` ~576 MB) is gitignored — recreate with the relevant script.

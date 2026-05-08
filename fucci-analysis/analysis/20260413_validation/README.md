@@ -1,50 +1,153 @@
 # 20260413_validation
 
-## Background characterization results
+Outputs for FUCCI timelapse analysis on dataset `20260413_FUCCI_Timelapse`
+(32 wells × 67 timepoints × 3 channels). Currently scoped to single-well
+validation on **`R1_1`** before scaling.
 
-This directory stores outputs for background characterization on Dataset 1 validation artifacts.
+The work has two phases:
 
-### Folder contents
+1. **Background characterization (Phase 1)** — quadrant-level QC of 561/647 and
+   prototype flat-field correction. (Earlier work.)
+2. **Cell cycle pipeline (Phase 2)** — segmentation, tracking, and per-cell
+   FUCCI intensity extraction. (Current main path.)
 
-- `background/`
-  - Quadrant-level tables and robust (median-based) subtraction summaries for each channel.
-- `plots/`
-  - Heatmaps/figures used to visually verify whether background variation has structured (systematic) components.
+---
 
-### Generated outputs (today’s run)
+## Folder contents
 
-Background tables:
-- `background/quadrant_background_647.csv`
-- `background/quadrant_background_561.csv`
-- `background/timepoint_background_summary_647.csv`
-- `background/timepoint_background_summary_561.csv`
+- `background/` (Phase 1) — quadrant-level CSVs and gradient metrics.
+- `plots/` (Phase 1) — background gradient heatmap and other QC PNGs.
+- `corrected/` (Phase 1, **gitignored, ~18 GB**) — flat-field-corrected 647
+  TIFFs, produced by `src/flat_field_correction.py` with `--strategy-647 t0`.
+  Currently NOT used by the cell cycle pipeline (see Phase 2 finding below).
+- `segmentation_test/` (Phase 2) — current pipeline outputs. Detailed below.
 
-Gradient visualization + metrics:
-- `plots/background_gradient_heatmap_561_647.png`
-- `background/background_gradient_metrics_561_647.csv`
+### Not in git
 
-### Key findings (today’s run)
+| Path | Size | How to recreate |
+| --- | --- | --- |
+| `corrected/` | ~18 GB | `python fucci-analysis/src/flat_field_correction.py` |
+| `segmentation_test/masks/` | ~576 MB (67 files) | `python fucci-analysis/src/timeseries_one_well.py` |
 
-- **Quantitative gradient metrics**
-  - `561`
-    - `row_gradient_range`: `5.591`
-    - `col_gradient_range`: `44.953`
-    - `well_nonuniform_std`: `13.838`
-    - `tp_mediansub_std_mean`: `15.196`
-  - `647`
-    - `row_gradient_range`: `10.419`
-    - `col_gradient_range`: `27.854`
-    - `well_nonuniform_std`: `10.622`
-    - `tp_mediansub_std_mean`: `10.709`
-- `647` channel shows a **more structured systematic gradient**, especially along the **row axis**.
-- `561` channel shows **stronger overall non-uniformity**, with larger **col-axis variation** (more axis-dependent “noise-like” behavior).
+On Dodo these directories already live at:
 
-### Next step: pseudo-flat-field correction
+- `/home/heeseok/github/jia-lab/fucci-analysis/analysis/20260413_validation/corrected/`
+- `/home/heeseok/github/jia-lab/fucci-analysis/analysis/20260413_validation/segmentation_test/masks/`
 
-There are no true blank wells in this acquisition, so a true flat-field is not directly available. The recommended next approach is a pseudo-flat-field:
+---
 
-1. Estimate background per `(timepoint, channel)` robustly using the set of wells.
-2. Fit a smooth correction surface (row/col) or compute a pixelwise correction image.
-3. Apply a correction (typically **subtraction**; consider division only if the shading is clearly multiplicative).
-4. Re-run QC to confirm that quadrant residuals/heatmaps become more uniform across wells.
+## `segmentation_test/` inventory (Phase 2)
 
+All outputs are for well `R1_1`. The pipeline scripts that produced each file
+are noted in parentheses.
+
+### Cell tracking
+
+- `R1_1_tracks.csv` — frame-to-frame linked tracks; columns
+  `timepoint, cell_id, track_id, centroid_x, centroid_y, area`.
+  246 tracks total, 2509 rows. (`tracking_one_well.py`)
+- `R1_1_track_qc.png` — track length histogram with QC totals
+  (full duration / edge endpoint / suspicious mid-FOV).
+
+### Population time series (legacy, no tracking)
+
+- `R1_1_all_timepoints.csv` — per-cell intensities at every timepoint, no
+  tracking. Each timepoint reuses fresh Cellpose ids. (`timeseries_one_well.py`)
+- `R1_1_ratio_timeseries.png` — population median + 10–90 percentile band.
+
+### Per-track nuclear intensity (current main output)
+
+- `R1_1_nuclear_intensity.csv` — per-track per-timepoint nuclear-mask intensity
+  after filtering (`track length >= 5 AND area > 400 px`). 67 tracks,
+  2142 rows. **Uses raw 647** (see finding below). Columns:
+  `track_id, timepoint, cell_id, area, nuclear_area, mean_561, mean_647`.
+  (`nuclear_intensity_one_well.py`)
+- `R1_1_trace_561.png`, `R1_1_trace_647.png`, `R1_1_trace_ratio.png`
+  — per-track time traces; full-duration tracks highlighted in red.
+
+### 647 source diagnostic
+
+- `R1_1_nuclear_647_comparison.csv` — same tracks/erosion, both corrected and
+  raw 647 sampled side-by-side. Columns:
+  `track_id, timepoint, cell_id, nuclear_area, mean_561, mean_647_corrected, mean_647_raw`.
+  (`nuclear_intensity_raw_comparison.py`)
+- `R1_1_647_correction_diagnosis.png` — 2×2 figure: per-track 647 traces
+  (corrected | raw) and per-track-mean histograms (corrected | raw),
+  full-duration tracks only.
+
+### Representative QC images
+
+- `qc_segmentation_grid.png` — 4 timepoints (t = 0, 22, 44, 66) × 2 views
+  (BF + all cell mask outlines | BF + filtered eroded nuclear masks).
+- `qc_single_cell_trace.png` — best full-duration track (highest mean 647);
+  100×100 BF and 647 crops at 4 timepoints.
+- `qc_population_t30.png` — at t = 30, filtered nuclear regions colored by
+  raw `mean_647`; useful for spatial heterogeneity check.
+
+### Single-image legacy / reference
+
+- `R1_1_t030_BF_mask.npy` — Cellpose-SAM mask from the very first
+  `segment_test.py` run (R1_1, t=30). Reference / sanity-check only.
+- `R1_1_t030_BF_overlay.png` — overlay PNG from the same run.
+- `R1_1_t030_intensity.csv` — single-timepoint per-cell 561/647 from
+  `extract_intensity.py` (intermediate test, superseded).
+
+### `masks/` (gitignored)
+
+67 BF masks `R1_1_t000_BF_mask.npy` … `R1_1_t066_BF_mask.npy`, int32,
+1500 × 1500. Produced by `timeseries_one_well.py` and consumed by
+`tracking_one_well.py`, `nuclear_intensity_one_well.py`, and
+`nuclear_intensity_raw_comparison.py`.
+
+---
+
+## Key findings
+
+### Phase 1 — background gradient (earlier)
+
+Quantified from `background/background_gradient_metrics_561_647.csv`
+(see `plots/background_gradient_heatmap_561_647.png`):
+
+- 561: `row_gradient_range = 5.591`, `col_gradient_range = 44.953`,
+  `well_nonuniform_std = 13.838` — stronger overall non-uniformity, larger
+  variation along the col axis.
+- 647: `row_gradient_range = 10.419`, `col_gradient_range = 27.854`,
+  `well_nonuniform_std = 10.622` — more structured row-axis gradient.
+
+This motivated trying a pseudo flat-field correction for 647.
+
+### Phase 2 — flat-field correction killed FUCCI signal
+
+Compared corrected vs raw 647 with everything else fixed (same tracks, same
+BF mask, same 3-px erosion, full-duration tracks only):
+
+- `std mean_647 corrected = 3.885`
+- `std mean_647 raw       = 204.454`
+- **`std_raw / std_corrected = 52.6×`**
+
+The t0-reference correction (`corrected = raw / ref(t0) * median(ref(t0))`)
+collapses cell-to-cell variation in 647 because t = 0 already contains cells
+in various cycle phases at fixed positions, so the "reference" includes
+biological signal that gets normalized away. Source: `R1_1_647_correction_diagnosis.png`,
+script `src/nuclear_intensity_raw_comparison.py`.
+
+**Decision**: the current cell cycle pipeline uses **raw 647**. The 647 row-axis
+gradient is preserved, but biological FUCCI signal is not destroyed. A different
+correction strategy (e.g. `--strategy-647 min` in `flat_field_correction.py`,
+or a properly cell-free reference) should be evaluated before re-introducing
+correction.
+
+### Phase 2 — track quality on R1_1
+
+From `tracking_one_well.py` and `nuclear_intensity_one_well.py`:
+
+- Total tracks (raw, no filter): **246**
+- Full-duration tracks (length = 67) before any filter: **20**
+- After `track length >= 5 AND area > 400 px` filter: **67 tracks**, of which
+  **12 are still full-duration**. The drop from 20 → 12 is mainly due to
+  occasional small-area frames within otherwise long tracks; those rows are
+  removed by the area filter, leaving the surviving track shorter than 67.
+- Suspicious mid-FOV ghost tracks before filter: 153 (62% of all tracks),
+  ~80% of which have length ≤ 3 frames. These are dominated by track
+  fragmentation and short-lived false positives, both addressable by raising
+  `MEMORY_FRAMES` and/or stricter post-tracking length cuts.
