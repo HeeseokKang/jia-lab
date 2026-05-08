@@ -61,9 +61,16 @@ are noted in parentheses.
   after filtering (`track length >= 5 AND area > 400 px`). 67 tracks,
   2142 rows. **Uses raw 647** (see finding below). Columns:
   `track_id, timepoint, cell_id, area, nuclear_area, mean_561, mean_647`.
-  (`nuclear_intensity_one_well.py`)
+  (`nuclear_intensity_one_well.py`, default erosion=3)
 - `R1_1_trace_561.png`, `R1_1_trace_647.png`, `R1_1_trace_ratio.png`
   — per-track time traces; full-duration tracks highlighted in red.
+
+Erosion sensitivity variant (kept side-by-side; same filter, raw 647):
+
+- `R1_1_nuclear_intensity_e15.csv` — same columns, erosion=15.
+- `R1_1_trace_561_e15.png`, `R1_1_trace_647_e15.png`, `R1_1_trace_ratio_e15.png`
+- `qc_population_t30_e15.png`, `qc_segmentation_grid_e15.png`
+  (`nuclear_intensity_one_well.py --erosion 15 --suffix _e15`)
 
 ### 647 source diagnostic
 
@@ -136,6 +143,24 @@ gradient is preserved, but biological FUCCI signal is not destroyed. A different
 correction strategy (e.g. `--strategy-647 min` in `flat_field_correction.py`,
 or a properly cell-free reference) should be evaluated before re-introducing
 correction.
+
+### Phase 2 — erosion sensitivity (default 3 vs 15)
+
+`nuclear_intensity_one_well.py` exposes `--erosion` for sensitivity testing.
+Comparing the default `erosion=3` run with `erosion=15` (`_e15` outputs):
+
+| metric (full-duration tracks) | erosion=3 | erosion=15 |
+| --- | --- | --- |
+| mean `nuclear_area / area` | 0.760 | 0.261 |
+| std `mean_561` (raw) | 91.9 | 178.3 |
+| std `mean_647` (raw) | 204.5 | 204.2 |
+| `ratio_647_561` range | 0.850–1.293 | 0.759–1.285 |
+
+Stronger erosion strips most cytoplasm (≈26 % of cell area remains), which
+roughly doubles the per-track 561 cell-to-cell std, while the 647 std is
+already saturated at the raw value and barely moves. Visual check that the
+yellow nuclear-mask overlay sits inside the nucleus:
+`qc_segmentation_grid_e15.png`.
 
 ### Phase 2 — track quality on R1_1
 

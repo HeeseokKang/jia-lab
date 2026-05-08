@@ -12,6 +12,7 @@ Also writes qc_population_t30.png with filtered cells colored by raw mean_647.
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 import sys
 
@@ -78,11 +79,45 @@ def auto_contrast(image: np.ndarray, lo_pct: float = 1.0, hi_pct: float = 99.7) 
     return np.clip((arr - lo) / (hi - lo), 0.0, 1.0)
 
 
-def erode_cell(cell_mask: np.ndarray, iterations: int = EROSION_ITERS) -> np.ndarray:
+def erode_cell(cell_mask: np.ndarray, iterations: int | None = None) -> np.ndarray:
+    # Resolve at call time so CLI overrides of EROSION_ITERS apply uniformly.
+    if iterations is None:
+        iterations = EROSION_ITERS
     eroded = binary_erosion(cell_mask, iterations=iterations)
     if not eroded.any():
         return cell_mask
     return eroded
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Per-track FUCCI intensity from eroded BF nuclear regions for "
+            "well R1_1. Use --erosion / --suffix to run sensitivity variants "
+            "without overwriting the default outputs."
+        )
+    )
+    parser.add_argument(
+        "--erosion",
+        type=int,
+        default=EROSION_ITERS,
+        help="binary_erosion iterations on the BF cell mask (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--suffix",
+        type=str,
+        default="",
+        help="suffix appended to all output filenames, e.g. _e15",
+    )
+    parser.add_argument(
+        "--with-grid",
+        action="store_true",
+        help=(
+            "also write qc_segmentation_grid{suffix}.png (auto-enabled when "
+            "--suffix is non-empty)"
+        ),
+    )
+    return parser.parse_args()
 
 
 def filter_tracks(tracks_df: pd.DataFrame) -> pd.DataFrame:
@@ -325,6 +360,13 @@ def plot_population_snapshot(intensity_df: pd.DataFrame, out_path: Path) -> None
 
 
 def main() -> None:
+    args = parse_args()
+    global EROSION_ITERS
+    EROSION_ITERS = args.erosion
+    suffix = args.suffix
+    with_grid = args.with_grid or bool(suffix)
+
+    print(f"[CONFIG] erosion={EROSION_ITERS}, suffix={suffix!r}, with_grid={with_grid}")
     SEG_DIR.mkdir(parents=True, exist_ok=True)
 
     tracks_csv = SEG_DIR / f"{WELL_ID}_tracks.csv"
@@ -345,7 +387,7 @@ def main() -> None:
     )
 
     intensity_df = compute_nuclear_intensity(filtered)
-    out_csv = SEG_DIR / f"{WELL_ID}_nuclear_intensity.csv"
+    out_csv = SEG_DIR / f"{WELL_ID}_nuclear_intensity{suffix}.csv"
     intensity_df.to_csv(
         out_csv,
         index=False,
@@ -379,17 +421,30 @@ def main() -> None:
             f"{per_track['ratio_647_561'].max():.3f}"
         )
 
+    nuc_ratio = (intensity_df["nuclear_area"] / intensity_df["area"]).mean()
+    print(
+        f"[STATS] erosion={EROSION_ITERS}, "
+        f"mean nuclear_area / area = {nuc_ratio:.3f}"
+    )
+
     for col, label, fname in [
-        ("mean_561", "mean_561 (raw)", f"{WELL_ID}_trace_561.png"),
-        ("mean_647", "mean_647 (raw)", f"{WELL_ID}_trace_647.png"),
-        ("ratio_647_561", "ratio 647 / 561", f"{WELL_ID}_trace_ratio.png"),
+        ("mean_561", "mean_561 (raw)", f"{WELL_ID}_trace_561{suffix}.png"),
+        ("mean_647", "mean_647 (raw)", f"{WELL_ID}_trace_647{suffix}.png"),
+        ("ratio_647_561", "ratio 647 / 561", f"{WELL_ID}_trace_ratio{suffix}.png"),
     ]:
         out = SEG_DIR / fname
         plot_traces(intensity_df, col, label, out)
         print(f"[SAVED] {out}")
 
-    plot_population_snapshot(intensity_df, SEG_DIR / "qc_population_t30.png")
-    print(f"[SAVED] {SEG_DIR / 'qc_population_t30.png'}")
+    plot_population_snapshot(
+        intensity_df, SEG_DIR / f"qc_population_t30{suffix}.png"
+    )
+    print(f"[SAVED] {SEG_DIR / f'qc_population_t30{suffix}.png'}")
+
+    if with_grid:
+        grid_path = SEG_DIR / f"qc_segmentation_grid{suffix}.png"
+        plot_qc_segmentation_grid(filtered, grid_path)
+        print(f"[SAVED] {grid_path}")
 
 
 if __name__ == "__main__":

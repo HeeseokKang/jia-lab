@@ -48,12 +48,25 @@ edge-endpoint tracks, suspicious mid-FOV tracks.
 ### 4. `nuclear_intensity_one_well.py` — Per-track nuclear FUCCI intensity (raw 647)
 
 For each filtered detection (`track length >= 5 AND area > 400 px`), erodes
-the BF cell mask by 3 px to approximate the nuclear region, then samples
-mean intensity in 561 (raw) and 647 (raw). Writes
-`R1_1_nuclear_intensity.csv` and three per-track trace plots (561, 647,
-647/561 ratio) plus a population snapshot at t=30. **Uses raw 647**: the
-t0-reference flat-field correction was found to flatten FUCCI signal (see
-the diagnostic script below).
+the BF cell mask by `--erosion` iterations (default 3 px) to approximate the
+nuclear region, then samples mean intensity in 561 (raw) and 647 (raw).
+Writes `R1_1_nuclear_intensity{suffix}.csv` and three per-track trace plots
+(561, 647, 647/561 ratio) plus a population snapshot at t=30. **Uses raw 647**:
+the t0-reference flat-field correction was found to flatten FUCCI signal
+(see the diagnostic script below).
+
+CLI options for sensitivity testing without overwriting defaults:
+
+- `--erosion N` — `binary_erosion` iterations (default 3)
+- `--suffix STR` — appended to all output filenames, e.g. `_e15`
+- `--with-grid` — also write `qc_segmentation_grid{suffix}.png`
+  (auto-enabled when `--suffix` is non-empty)
+
+Example: stronger erosion variant kept side-by-side with the default run:
+
+```bash
+python fucci-analysis/src/nuclear_intensity_one_well.py --erosion 15 --suffix _e15
+```
 
 ### 5. `nuclear_intensity_raw_comparison.py` — Diagnostic: corrected vs raw 647
 
