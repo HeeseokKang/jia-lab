@@ -22,3 +22,8 @@ RESULT_ROOT = REPO_ROOT / "fucci-analysis" / "analysis" / "20260413_validation"
 RESULT_ROOT.mkdir(parents=True, exist_ok=True)
 
 print(f"[CONFIG] Loaded paths. Primary dataset: {DATASET_1_RAW}")
+
+# 5) QPM (quantitative phase microscopy) dataset registration.
+QPM_ROOT = Path("/data/Project_Data/QPM")
+QPM_20260513 = QPM_ROOT / "20260513_Hela_p15"
+QPM_RESULTS = Path(__file__).parent.parent / "qpm-analysis" / "analysis" / "20260513_Hela_p15"
