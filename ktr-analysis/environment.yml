@@ -1,0 +1,21 @@
+name: ktr-analysis
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - pandas
+  - tifffile
+  - matplotlib
+  - scikit-image
+  - pip
+  - pip:
+      - trackpy
+      - cellpose
+# NOTE (2026-05-19, Session 3): Stage 02 work runs in a separate dedicated
+# environment `ktr-segtrack` (python=3.10 + stardist + csbdeep + cellpose +
+# zarr + pyyaml + pandas). That env is provisional; this environment.yml will
+# be regenerated from `conda env export` only after ktr-segtrack stabilises.
+# Until then, ktr-analysis env stays minimal and is NOT the runtime env for
+# Stage 02. See ktr/configs/project.yaml `pipeline.conda_env`.

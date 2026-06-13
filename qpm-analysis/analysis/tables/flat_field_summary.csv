@@ -1,0 +1,11 @@
+lid,direction,intensity,F_min,F_max,F_std,raw_min,raw_max,raw_std,path
+off,bffull,50223.72214045171,0.9152716994285583,1.0596332550048828,0.0213259886950254,44199.0,56499.0,1208.420960021974,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_off_bffull.npy
+off,top,23568.056102246253,0.8795998096466064,1.1355499029159546,0.0269166678190231,19461.0,29350.0,750.8747664613618,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_off_top.npy
+off,bottom,22315.844252375387,0.9033806324005128,1.119323968887329,0.0284742694348096,18453.0,27764.0,751.3221257534366,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_off_bottom.npy
+off,left,25451.1458690498,0.9141997694969176,1.113638162612915,0.0186395049095153,21933.0,30970.0,634.9621293470775,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_off_left.npy
+off,right,20733.17455938847,0.8820570707321167,1.139442801475525,0.0336476415395736,17010.0,26431.0,794.9595148615499,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_off_right.npy
+on,bffull,50322.04098951008,0.9118384718894958,1.056793451309204,0.0232726465910673,44036.0,56642.0,1298.2398141386109,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_on_bffull.npy
+on,top,23568.457490664357,0.8725866079330444,1.1265805959701538,0.0288347769528627,19386.0,29308.0,789.4008577857901,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_on_top.npy
+on,bottom,22427.77709563916,0.8954042196273804,1.1148964166641235,0.0290750227868556,18557.0,27765.0,765.7939037874884,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_on_bottom.npy
+on,left,25269.50203953369,0.9129634499549866,1.1102007627487185,0.0217209719121456,21525.0,30827.0,692.0725262990433,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_on_left.npy
+on,right,21005.698973086983,0.8853247165679932,1.1340526342391968,0.033535435795784,17251.0,26534.0,801.9436464814864,/home/heeseok/github/jia-lab/qpm-analysis/analysis/calibration/flat_field_on_right.npy

@@ -1,0 +1,2 @@
+# QC renders (regenerate with scripts/render_fov_qc.py)
+figures/qc/*.png

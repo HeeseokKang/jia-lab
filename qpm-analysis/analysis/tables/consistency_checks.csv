@@ -1,0 +1,12 @@
+check,status,detail
+all_images_same_shape,PASS,"shapes=[(2400, 2400)]"
+all_images_same_dtype,PASS,dtypes=['uint16']
+all_images_same_pixel_format,PASS,pixel_formats=['MONO16']
+all_images_same_exposure,PASS,exposures_ms=[10.0]
+all_images_same_led_intensity,PASS,led_intensities=[5.0]
+all_images_same_NA,PASS,NA=[0.3]
+all_images_same_magnification,PASS,magnification=[10.0]
+every_condition_has_5_directions,PASS,all complete
+led_matrix_mode_matches_filename_direction,PASS,all consistent
+empty_field_references_present,PASS,"empty_conditions=['off_empty', 'on_empty']"
+no_image_saturated_above_1e-03,PASS,all clean
